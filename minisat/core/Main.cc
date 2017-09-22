@@ -82,28 +82,28 @@ int main(int argc, char** argv)
         if (mem_lim != 0) limitMemory(mem_lim);
         
         if (argc == 1)
-            printf("Reading from standard input... Use '--help' for help.\n");
+            fprintf(stderr, "Reading from standard input... Use '--help' for help.\n");
         
         gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
         if (in == NULL)
-            printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
+            fprintf(stderr, "ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
         
         if (S.verbosity > 0){
-            printf("============================[ Problem Statistics ]=============================\n");
-            printf("|                                                                             |\n"); }
+            fprintf(stderr, "============================[ Problem Statistics ]=============================\n");
+            fprintf(stderr, "|                                                                             |\n"); }
         
         parse_DIMACS(in, S, (bool)strictp);
         gzclose(in);
-        FILE* res = (argc >= 3) ? fopen(argv[2], "wb") : NULL;
+        FILE* res = (argc >= 3) ? fopen(argv[2], "wb") : stdout;
         
         if (S.verbosity > 0){
-            printf("|  Number of variables:  %12d                                         |\n", S.nVars());
-            printf("|  Number of clauses:    %12d                                         |\n", S.nClauses()); }
+            fprintf(stderr, "|  Number of variables:  %12d                                         |\n", S.nVars());
+            fprintf(stderr, "|  Number of clauses:    %12d                                         |\n", S.nClauses()); }
         
         double parsed_time = cpuTime();
         if (S.verbosity > 0){
-            printf("|  Parse time:           %12.2f s                                       |\n", parsed_time - initial_time);
-            printf("|                                                                             |\n"); }
+            fprintf(stderr, "|  Parse time:           %12.2f s                                       |\n", parsed_time - initial_time);
+            fprintf(stderr, "|                                                                             |\n"); }
  
         // Change to signal-handlers that will only notify the solver and allow it to terminate
         // voluntarily:
@@ -112,11 +112,11 @@ int main(int argc, char** argv)
         if (!S.simplify()){
             if (res != NULL) fprintf(res, "UNSAT\n"), fclose(res);
             if (S.verbosity > 0){
-                printf("===============================================================================\n");
-                printf("Solved by unit propagation\n");
+                fprintf(stderr, "===============================================================================\n");
+                fprintf(stderr, "Solved by unit propagation\n");
                 S.printStats();
-                printf("\n"); }
-            printf("UNSATISFIABLE\n");
+                fprintf(stderr, "\n"); }
+            fprintf(stderr, "UNSATISFIABLE\n");
             exit(20);
         }
         
@@ -124,11 +124,10 @@ int main(int argc, char** argv)
         lbool ret = S.solveLimited(dummy);
         if (S.verbosity > 0){
             S.printStats();
-            printf("\n"); }
-        printf(ret == l_True ? "SATISFIABLE\n" : ret == l_False ? "UNSATISFIABLE\n" : "INDETERMINATE\n");
+            fprintf(stderr, "\n"); }
+        fprintf(stderr, ret == l_True ? "SATISFIABLE\n" : ret == l_False ? "UNSATISFIABLE\n" : "INDETERMINATE\n");
         if (res != NULL){
             if (ret == l_True){
-                fprintf(res, "SAT\n");
                 for (int i = 0; i < S.nVars(); i++)
                     if (S.model[i] != l_Undef)
                         fprintf(res, "%s%s%d", (i==0)?"":" ", (S.model[i]==l_True)?"":"-", i+1);
